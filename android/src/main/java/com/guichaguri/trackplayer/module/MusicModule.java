@@ -446,4 +446,10 @@ public class MusicModule extends ReactContextBaseJavaModule implements ServiceCo
     public void getState(final Promise callback) {
         waitForConnection(() -> callback.resolve(binder.getPlayback().getState()));
     }
+
+    @ReactMethod
+    public void isServiceConnected(final Promise promise) {
+        // https://github.com/react-native-kit/react-native-track-player/issues/473#issuecomment-496534568
+        promise.resolve(binder != null);
+    }
 }
