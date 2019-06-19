@@ -97,6 +97,7 @@ declare namespace RNTrackPlayer {
   export function getBufferedPosition(): Promise<number>;
   export function getState(): Promise<string>;
   export function getRate(): Promise<number>;
+  export function isServiceConnected(): Promise<boolean>;
 }
 
 // Components
