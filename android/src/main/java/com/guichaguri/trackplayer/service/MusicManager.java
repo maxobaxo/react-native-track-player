@@ -44,6 +44,8 @@ public class MusicManager implements OnAudioFocusChangeListener {
     private MetadataManager metadata;
     private ExoPlayback playback;
 
+    private Boolean wasTemporarilyDucking = false;
+
     @RequiresApi(26)
     private AudioFocusRequest focus = null;
     private boolean hasAudioFocus = false;
@@ -135,6 +137,8 @@ public class MusicManager implements OnAudioFocusChangeListener {
             }
         }
 
+        wasTemporarilyDucking = false;
+
         metadata.setForeground(true, true);
     }
 
@@ -145,7 +149,7 @@ public class MusicManager implements OnAudioFocusChangeListener {
         if(wakeLock.isHeld()) wakeLock.release();
         if(wifiLock.isHeld()) wifiLock.release();
 
-        abandonFocus();
+        if (wasTemporarilyDucking == false) abandonFocus();
 
         metadata.setForeground(false, true);
     }
@@ -216,13 +220,18 @@ public class MusicManager implements OnAudioFocusChangeListener {
 
         switch(focus) {
             case AudioManager.AUDIOFOCUS_LOSS:
+                Log.d(Utils.LOG, "onDuck -> permanent");
                 permanent = true;
                 abandonFocus();
             case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
+                Log.d(Utils.LOG, "onDuck -> transient");
                 paused = true;
+                wasTemporarilyDucking = true;
                 break;
             case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
+                Log.d(Utils.LOG, "onDuck -> transient can duck");
                 ducking = true;
+                wasTemporarilyDucking = true;
                 break;
             default:
                 break;
