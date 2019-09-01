@@ -117,7 +117,7 @@ public class MusicService extends HeadlessJsTaskService {
         }
 
         super.onStartCommand(intent, flags, startId);
-        return START_STICKY;
+        return START_NOT_STICKY;
     }
 
     private void recoverLostPlayer(Integer keycode) {
