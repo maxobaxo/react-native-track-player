@@ -10,10 +10,10 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
-import android.support.v4.app.NotificationCompat;
-import android.support.v4.content.LocalBroadcastManager;
+import androidx.core.app.NotificationCompat;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import android.support.v4.media.RatingCompat;
-import android.support.v4.media.session.MediaButtonReceiver;
+import androidx.media.session.MediaButtonReceiver;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -34,7 +34,7 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
-import static android.support.v4.app.NotificationCompat.PRIORITY_MIN;
+import static androidx.core.app.NotificationCompat.PRIORITY_MIN;
 import static android.view.KeyEvent.KEYCODE_HEADSETHOOK;
 import static android.view.KeyEvent.KEYCODE_MEDIA_FAST_FORWARD;
 import static android.view.KeyEvent.KEYCODE_MEDIA_NEXT;
@@ -142,19 +142,28 @@ public class MusicService extends HeadlessJsTaskService {
         Integer ratingType = optionsBundle.getInt("ratingType", RatingCompat.RATING_NONE);
         Track currentTrack = new Track(getApplicationContext(), jsonStringToBundle(cachedCurrentTrack), ratingType);
         Long currentPosition = prefs.getLong("cachedPosition", 0);
-        Integer resumeAt = 0;
+        Integer resumeAt = -1;
 
         // Get cached queue
-        Set<String> cachedQueueSet = prefs.getStringSet("cachedQueue", null);
+        String cachedQueueString = prefs.getString("cachedQueue", null);
+        String[] cachedQueueStrings = cachedQueueString.split("-queueTrackSeperator-");
         List<Track> cachedQueue = new ArrayList<>();
         Integer index = 0;
-        for (String s : cachedQueueSet) {
+        for (String s : cachedQueueStrings) {
+            Log.d(Utils.LOG, "recoverLostPlayer recovering track " + index + " : " + s);
             Bundle trackBundle = jsonStringToBundle(s);
             Track track = new Track(getApplicationContext(), trackBundle, ratingType);
             if (track.id.equals(currentTrack.id)) {
                 resumeAt = index;
+                // Current track must be index 0;
+                cachedQueue.add(track);
+            } else if (resumeAt != -1) {
+                // Don't add tracks before current track
+                cachedQueue.add(track);
+            } else {
+                Log.d(Utils.LOG, "recoverLostPlayer not recovering track history with " + s);
             }
-            cachedQueue.add(track);
+
             index ++;
         }
 
@@ -165,7 +174,7 @@ public class MusicService extends HeadlessJsTaskService {
             manager.switchPlayback(playback);
         }
 
-        playback.add(cachedQueue, resumeAt, null);
+        playback.add(cachedQueue, 0, null);
 
         // Set player options
         manager.getMetadata().updateOptions(optionsBundle);
@@ -220,12 +229,17 @@ public class MusicService extends HeadlessJsTaskService {
         editor.putLong("cachedPosition", currentPosition);
 
         // Cache queue
-        Set<String> set = new HashSet<>();
+        String stringifiedQueue = "";
         List<Track> tracks = playback.getQueue();
+        Integer index = 0;
         for(Track track : tracks) {
-            set.add(track.json.toString());
+            if (index != 0) {
+                stringifiedQueue += "-queueTrackSeperator-";
+            }
+            stringifiedQueue += track.json.toString();
+            index++;
         }
-        editor.putStringSet("cachedQueue", set);
+        editor.putString("cachedQueue", stringifiedQueue);
 
         // Cache options
         Bundle options = manager.getMetadata().getOptionsBundle();

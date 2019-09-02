@@ -156,12 +156,12 @@ public class ExoPlayback implements EventListener {
                 lastKnownPosition = player.getCurrentPosition();
 
                 player.seekToDefaultPosition(i);
-                promise.resolve(null);
+                if(promise != null) promise.resolve(null);
                 return;
             }
         }
 
-        promise.reject("track_not_in_queue", "Given track ID was not found in queue");
+        if(promise != null) promise.reject("track_not_in_queue", "Given track ID was not found in queue");
     }
 
     public void skipToPrevious(Promise promise) {
