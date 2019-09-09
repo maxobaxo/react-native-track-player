@@ -212,6 +212,8 @@ public class MusicService extends HeadlessJsTaskService {
     }
 
     private void cachePlayer() {
+        clearCache();
+
         ExoPlayback playback = manager.getPlayback();
         if (playback == null) return;
 
